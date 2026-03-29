@@ -164,18 +164,18 @@ class ServerFingerprinter:
         if dangerous:
             self.findings.append({
                 'title': 'Dangerous Ports Open',
-                'description': f'Sensitive services exposed: {", ".join(f"{p[\\\'port\\\']}/{p[\\\'service\\\']}" for p in dangerous)}',
+                'description': 'Sensitive services exposed: ' + ', '.join('{}/{}'.format(p['port'], p['service']) for p in dangerous),
                 'severity': 'HIGH', 'category': 'fingerprint',
                 'owasp': 'A05:2021', 'cwe': 'CWE-200',
                 'remediation': 'Close unnecessary ports, restrict access via firewall',
-                'evidence': f'Open: {", ".join(f"{p[\\\'port\\\']}/{p[\\\'service\\\']}" for p in dangerous)}'
+                'evidence': 'Open: ' + ', '.join('{}/{}'.format(p['port'], p['service']) for p in dangerous)
             })
         if open_ports:
             self.findings.append({
                 'title': 'Open Ports Discovered',
                 'description': f'{len(open_ports)} open ports found on {self.hostname}',
                 'severity': 'INFO', 'category': 'fingerprint',
-                'evidence': f'Ports: {", ".join(f"{p[\\\'port\\\']}/{p[\\\'service\\\']}" for p in open_ports)}'
+                'evidence': 'Ports: ' + ', '.join('{}/{}'.format(p['port'], p['service']) for p in open_ports)
             })
 
     def analyze_ssl_tls(self):

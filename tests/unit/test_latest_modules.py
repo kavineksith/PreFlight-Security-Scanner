@@ -24,7 +24,7 @@ class TestWAFDetector:
         self.session.get.side_effect = [resp1, resp2]
         tester = WAFDetector(self.session, BASE_URL)
         tester.detect_waf()
-        assert any('Cloudflare' in f['title'] for f in tester.findings)
+        assert any('Cloudflare' in f['description'] for f in tester.findings)
 
     def test_generic_waf_detected(self):
         resp1 = make_mock_response(200)
