@@ -1,0 +1,13 @@
+preflight-sec/
+├── preflight.py          # Main entry point
+├── modules/
+│   ├── __init__.py
+│   ├── auth_tester.py    # Authentication & authorization
+│   ├── owasp_scanner.py  # OWASP Top 10 checks
+│   ├── api_tester.py     # API security (OWASP API Top 10)
+│   ├── cvss_scorer.py    # CVSS v3.1 calculator
+│   ├── reporter.py       # HTML/JSON/CSV output
+│   └── utils.py          # Shared utilities
+├── requirements.txt
+├── run.sh
+└── README.md
