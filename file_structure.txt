@@ -1,13 +1,48 @@
 preflight-sec/
-├── preflight.py          # Main entry point
-├── modules/
-│   ├── __init__.py
-│   ├── auth_tester.py    # Authentication & authorization
-│   ├── owasp_scanner.py  # OWASP Top 10 checks
-│   ├── api_tester.py     # API security (OWASP API Top 10)
-│   ├── cvss_scorer.py    # CVSS v3.1 calculator
-│   ├── reporter.py       # HTML/JSON/CSV output
-│   └── utils.py          # Shared utilities
-├── requirements.txt
-├── run.sh
-└── README.md
+├── preflight.py                      # Main Scanner Orchestrator (Entry Point)
+├── run.sh                            # Bash execution wrapper
+├── requirements.txt                  # Python dependencies
+├── README.md                         # Enterprise documentation
+├── file_structure.txt                # This architecture reference file
+├── LICENSE                           # MIT License
+├── .gitignore                        # Git exclusion rules
+├── .gitattributes                    # Git line-ending configs
+├── .github/
+│   └── workflows/
+│       └── security-scan.yml         # CI/CD GitHub Actions Pipeline
+├── data/                             # Threat Intelligence Data Directory
+│   ├── cve_patterns.json             # Signatures mapping findings to CVEs
+│   ├── mitre_attack_mapping.json     # Mappings from CWEs to MITRE ATT&CK TTPs
+│   └── *.txt                         # (Dynamic payloads downloaded by updater)
+├── scan_reports/                     # Auto-generated outputs
+│   ├── preflight_report_*.html       # Executive visual reports
+│   ├── preflight_report_*.json       # Machine-readable output for SIEMs
+│   └── preflight_report_*.csv        # Developer remediation spreadsheets
+├── tests/                            # Pytest Execution Suite
+│   ├── conftest.py                   # Mock HTTP sessions and fixtures
+│   └── test_*.py                     # Unit and integration tests for all modules
+└── modules/                          # 22 Advanced Scan Engines & Core Arch
+    ├── __init__.py
+    ├── api_tester.py                 # OWASP API Top 10 Security (2019/2023/2025)
+    ├── auth_bypass_tester.py         # MFA/OTP Bypass and Logic Flaws
+    ├── auth_tester.py                # Legacy Authentication Weaknesses
+    ├── cors_tester.py                # Cross-Origin Resource Sharing Misconfigs
+    ├── crypto_analyzer.py            # TLS/Crypto algorithmic weaknesses
+    ├── csrf_tester.py                # Cross-Site Request Forgery Validation
+    ├── cve_mapper.py                 # Core Threat Intelligence Mapping Engine
+    ├── cvss_scorer.py                # CVSS v3.1 / EPSS Risk Calculator
+    ├── dns_recon.py                  # Subdomain Takeover & DNS Zone Transfers
+    ├── header_analyzer.py            # Missing/Weak Security Headers (HSTS/CSP)
+    ├── http_method_tester.py         # HTTP Verb Tampering & OPTIONS leakage
+    ├── injection_tester.py           # SQLi, NoSQLi, OS Cmd, LDAP, SSTI
+    ├── jwt_analyzer.py               # Token Brute-force & Algorithmic Confusion
+    ├── owasp_scanner.py              # OWASP Web Top 10 Security (2017/2021/2025)
+    ├── param_pollution_tester.py     # HTTP Parameter Pollution (HPP)
+    ├── payload_updater.py            # Dynamic 150k+ Payload Fetcher (SecLists)
+    ├── privilege_escalation_tester.py# IDORs & Horizontal/Vertical PrivEsc
+    ├── rate_limiter_tester.py        # Brute-force/Rate Limiting absence
+    ├── reporter.py                   # HTML/JSON/CSV Generation Engine
+    ├── server_fingerprinter.py       # Tech Stack & WAF Detection
+    ├── session_tester.py             # Session Fixation & Entropy checks
+    ├── ssrf_tester.py                # Server-Side Request Forgery & Cloud Metadata
+    └── utils.py                      # Shared Utilities (Logging/Decorators)
