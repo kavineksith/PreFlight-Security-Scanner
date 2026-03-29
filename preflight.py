@@ -104,7 +104,7 @@ class PreFlightScanner:
         self.cve_mapper = CVEMapper()
         self.server_fingerprinter = ServerFingerprinter(self.session, self.target_url)
         self.http_method_tester = HTTPMethodTester(self.session, self.target_url)
-        self.crypto_analyzer = CryptoAnalyzer(self.target_url)
+        self.crypto_analyzer = CryptoAnalyzer(self.session, self.target_url)
         self.privilege_escalation_tester = PrivilegeEscalationTester(self.session, self.target_url)
         
         self.port_scanner = PortScanner(self.target_url)
