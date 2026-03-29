@@ -156,7 +156,7 @@ class TestPrivilegeEscalationTester:
         self.session.cookies = []
 
     def test_forced_browsing_detected(self):
-        resp = make_mock_response(200, text='Admin Dashboard Content')
+        resp = make_mock_response(200, text='Admin Dashboard Content' * 10)
         resp.url = BASE_URL + '/admin'
         self.session.get.return_value = resp
         tester = PrivilegeEscalationTester(self.session, BASE_URL)

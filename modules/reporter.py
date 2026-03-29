@@ -143,11 +143,11 @@ class ReportGenerator:
         """Generate CSV report"""
         csv_file = self.output_dir / f"findings_{self.timestamp}.csv"
         
-        if findings:
-            with open(csv_file, 'w', newline='') as f:
-                writer = csv.DictWriter(f, fieldnames=['title', 'severity', 'cvss_score', 'owasp', 'cwe', 'remediation', 'evidence'])
-                writer.writeheader()
-                
+        with open(csv_file, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=['title', 'severity', 'cvss_score', 'owasp', 'cwe', 'remediation', 'evidence'])
+            writer.writeheader()
+            
+            if findings:
                 for finding in findings:
                     cvss_data = finding.get('cvss', {})
                     writer.writerow({
