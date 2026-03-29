@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 from urllib.parse import urlparse
 from colorama import Fore, Style
+from modules.payload_updater import PayloadUpdater
 
 try:
     import dns.resolver
@@ -24,6 +25,7 @@ class DNSRecon:
         self.hostname = urlparse(target_url).hostname or target_url
         self.findings = []
         self.data_dir = Path(__file__).parent.parent / 'data'
+        self.updater = PayloadUpdater()
 
     def run_all_checks(self):
         """Run all DNS reconnaissance checks."""
@@ -118,12 +120,14 @@ class DNSRecon:
         """Brute-force subdomain discovery."""
         print(f"{Fore.YELLOW}[*] Discovering subdomains...{Style.RESET_ALL}")
 
+        massive_subdomains = self.updater.load_payloads('common_subdomains_massive.txt', max_payloads=1000)
+
         wordlist_path = self.data_dir / 'common_subdomains.txt'
-        if wordlist_path.exists():
+        if wordlist_path.exists() and not massive_subdomains:
             with open(wordlist_path, 'r') as f:
                 subdomains = [line.strip() for line in f if line.strip()]
         else:
-            subdomains = [
+            subdomains = massive_subdomains if massive_subdomains else [
                 'www', 'mail', 'ftp', 'admin', 'api', 'dev', 'staging', 'test',
                 'beta', 'portal', 'app', 'blog', 'shop', 'cdn', 'static',
                 'login', 'dashboard', 'panel', 'vpn', 'remote', 'git', 'jenkins',
@@ -132,7 +136,7 @@ class DNSRecon:
             ]
 
         discovered = []
-        for sub in subdomains[:100]:  # Limit to avoid excessive scanning
+        for sub in subdomains:  # Test all loaded subdomains
             fqdn = f"{sub}.{self.hostname}"
             try:
                 ip = socket.gethostbyname(fqdn)

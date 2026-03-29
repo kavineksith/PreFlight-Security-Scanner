@@ -10,6 +10,7 @@ import base64
 import time
 from pathlib import Path
 from colorama import Fore, Style
+from modules.payload_updater import PayloadUpdater
 
 try:
     import jwt as pyjwt
@@ -24,6 +25,7 @@ class JWTAnalyzer:
         self.base_url = base_url
         self.findings = []
         self.data_dir = Path(__file__).parent.parent / 'data'
+        self.updater = PayloadUpdater()
 
     def run_all_checks(self):
         """Run all JWT security checks."""
@@ -124,15 +126,19 @@ class JWTAnalyzer:
         header, payload = self._decode_jwt_parts(token)
         if not header or header.get('alg', '') not in ('HS256', 'HS384', 'HS512'):
             return
+
+        # Use massive wordlist if available
+        massive_secrets = self.updater.load_payloads('jwt_secrets_massive.txt', max_payloads=1000)
+        
         secrets_path = self.data_dir / 'jwt_secrets.txt'
-        if secrets_path.exists():
+        if secrets_path.exists() and not massive_secrets:
             with open(secrets_path) as f:
                 secrets = [l.strip() for l in f if l.strip()]
         else:
-            secrets = ['secret', 'password', 'key', '123456', 'admin', 'jwt_secret',
+            secrets = massive_secrets if massive_secrets else ['secret', 'password', 'key', '123456', 'admin', 'jwt_secret',
                        'changeme', 'test', 'default', 'supersecret', 'qwerty', '']
         if JWT_AVAILABLE:
-            for secret in secrets[:50]:
+            for secret in secrets:
                 try:
                     pyjwt.decode(token, secret, algorithms=[header['alg']])
                     self.findings.append({

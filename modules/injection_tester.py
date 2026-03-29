@@ -7,6 +7,7 @@ import re
 import time
 from urllib.parse import urljoin, quote
 from colorama import Fore, Style
+from modules.payload_updater import PayloadUpdater
 
 
 class InjectionTester:
@@ -14,6 +15,11 @@ class InjectionTester:
         self.session = session
         self.base_url = base_url
         self.findings = []
+        self.updater = PayloadUpdater()
+
+        # Load dynamic payloads if available, keeping lists manageable
+        self.sqli_payloads = self.updater.load_payloads('sqli_payloads.txt', max_payloads=100)
+        self.xss_payloads = self.updater.load_payloads('xss_payloads.txt', max_payloads=100)
 
     def run_all_checks(self):
         """Run all injection tests."""
@@ -48,7 +54,7 @@ class InjectionTester:
         """Test for error-based SQL injection."""
         print(f"{Fore.YELLOW}[*] Testing error-based SQL injection...{Style.RESET_ALL}")
 
-        payloads = [
+        payloads = self.sqli_payloads if self.sqli_payloads else [
             "'", "''", "' OR '1'='1", "' OR 1=1 --", "'; DROP TABLE users; --",
             "' UNION SELECT NULL--", "1' ORDER BY 10--", "' AND 1=CONVERT(int, @@version)--"
         ]
@@ -347,7 +353,7 @@ class InjectionTester:
         """Test for reflected XSS."""
         print(f"{Fore.YELLOW}[*] Testing reflected XSS...{Style.RESET_ALL}")
 
-        payloads = [
+        payloads = self.xss_payloads if self.xss_payloads else [
             '<script>alert("XSS")</script>',
             '<img src=x onerror=alert("XSS")>',
             "javascript:alert('XSS')",

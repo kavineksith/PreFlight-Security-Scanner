@@ -5,6 +5,7 @@ Tests for common web vulnerabilities
 
 import re
 import time
+import concurrent.futures
 from urllib.parse import urljoin, urlparse
 from colorama import Fore, Style
 
@@ -15,17 +16,23 @@ class OWASPScanner:
         self.findings = []
         
     def run_all_checks(self, is_authenticated):
-        """Run all OWASP Top 10 checks"""
+        """Run all OWASP Top 10 checks concurrently"""
         
-        self.test_sql_injection()
-        self.test_xss_vulnerabilities()
-        self.test_command_injection()
-        self.test_path_traversal()
-        self.test_security_misconfigurations()
-        self.test_csrf_vulnerabilities()
-        self.test_ssrf_vulnerabilities()
-        self.test_file_upload_vulnerabilities()
+        tests = [
+            self.test_sql_injection,
+            self.test_xss_vulnerabilities,
+            self.test_command_injection,
+            self.test_path_traversal,
+            self.test_security_misconfigurations,
+            self.test_csrf_vulnerabilities,
+            self.test_ssrf_vulnerabilities,
+            self.test_file_upload_vulnerabilities
+        ]
         
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(test) for test in tests]
+            concurrent.futures.wait(futures)
+            
         return self.findings
     
     def test_sql_injection(self):
@@ -61,13 +68,14 @@ class OWASPScanner:
                             'title': 'SQL Injection Vulnerability',
                             'description': f'SQL injection possible in parameter: {param}',
                             'severity': 'CRITICAL',
-                            'owasp': 'A03:2021',
+                            'owasp': 'A03:2021 / A1:2017 / A03:2025',
                             'cwe': 'CWE-89',
                             'remediation': 'Use parameterized queries/prepared statements, validate all input',
                             'evidence': f'Payload "{payload}" triggered SQL error in {param}'
                         })
                         return
-                except:
+                except Exception as e:
+                    # Thread safe exception handling
                     continue
     
     def test_xss_vulnerabilities(self):
@@ -96,13 +104,13 @@ class OWASPScanner:
                             'title': 'Cross-Site Scripting (XSS)',
                             'description': f'XSS vulnerability in parameter: {param}',
                             'severity': 'HIGH',
-                            'owasp': 'A03:2021',
+                            'owasp': 'A03:2021 / A7:2017 / A03:2025',
                             'cwe': 'CWE-79',
                             'remediation': 'Proper output encoding, Content Security Policy, input validation',
                             'evidence': f'Payload "{payload}" reflected in response'
                         })
                         return
-                except:
+                except Exception as e:
                     continue
     
     def test_command_injection(self):
@@ -133,13 +141,13 @@ class OWASPScanner:
                             'title': 'Command Injection Vulnerability',
                             'description': f'Command injection possible in parameter: {param}',
                             'severity': 'CRITICAL',
-                            'owasp': 'A03:2021',
+                            'owasp': 'A03:2021 / A1:2017 / A03:2025',
                             'cwe': 'CWE-78',
                             'remediation': 'Avoid system calls with user input, use allowlists, sanitize input',
                             'evidence': f'Command "{payload}" executed successfully'
                         })
                         return
-                except:
+                except Exception as e:
                     continue
     
     def test_path_traversal(self):
@@ -166,13 +174,13 @@ class OWASPScanner:
                             'title': 'Path Traversal Vulnerability',
                             'description': f'Path traversal possible in parameter: {param}',
                             'severity': 'HIGH',
-                            'owasp': 'A01:2021',
+                            'owasp': 'A01:2021 / A5:2017 / A01:2025',
                             'cwe': 'CWE-22',
                             'remediation': 'Use allowlist of permitted files, validate path canonicalization',
                             'evidence': f'Successfully read file using {payload}'
                         })
                         return
-                except:
+                except Exception as e:
                     continue
     
     def test_security_misconfigurations(self):
@@ -187,12 +195,12 @@ class OWASPScanner:
                     'title': 'Directory Listing Enabled',
                     'description': 'Directory listing enabled on /uploads/',
                     'severity': 'MEDIUM',
-                    'owasp': 'A05:2021',
+                    'owasp': 'A05:2021 / A6:2017 / A05:2025',
                     'cwe': 'CWE-548',
                     'remediation': 'Disable directory listing in web server configuration',
                     'evidence': 'Directory listing showing file structure'
                 })
-        except:
+        except Exception as e:
             pass
         
         # Test for debug information
@@ -205,12 +213,12 @@ class OWASPScanner:
                         'title': 'Debug Information Exposed',
                         'description': f'Debug endpoint {endpoint} accessible',
                         'severity': 'HIGH',
-                        'owasp': 'A05:2021',
+                        'owasp': 'A05:2021 / A6:2017 / A05:2025',
                         'remediation': 'Disable debug mode in production',
                         'evidence': f'Debug information found at {endpoint}'
                     })
                     break
-            except:
+            except Exception as e:
                 continue
     
     def test_csrf_vulnerabilities(self):
@@ -226,12 +234,12 @@ class OWASPScanner:
                     'title': 'Missing CSRF Protection',
                     'description': 'Forms detected without CSRF tokens',
                     'severity': 'MEDIUM',
-                    'owasp': 'A01:2021',
+                    'owasp': 'A01:2021 / A8:2017 / A01:2025',
                     'cwe': 'CWE-352',
                     'remediation': 'Implement anti-CSRF tokens for all state-changing operations',
                     'evidence': 'Forms found without CSRF protection'
                 })
-        except:
+        except Exception as e:
             pass
     
     def test_ssrf_vulnerabilities(self):
@@ -251,14 +259,14 @@ class OWASPScanner:
                         'title': 'SSRF Vulnerability',
                         'description': f'SSRF possible at {endpoint}',
                         'severity': 'HIGH',
-                        'owasp': 'A10:2021',
-                        'api_owasp': 'API7:2023',
+                        'owasp': 'A10:2021 / A00:2025',
+                        'api_owasp': 'API7:2023 / API6:2019',
                         'cwe': 'CWE-918',
                         'remediation': 'Validate and restrict URL schemes, implement allowlist of domains',
                         'evidence': f'Successfully accessed internal resource via {endpoint}'
                     })
                     break
-            except:
+            except Exception as e:
                 continue
     
     def test_file_upload_vulnerabilities(self):
@@ -284,11 +292,11 @@ class OWASPScanner:
                             'title': 'Insecure File Upload',
                             'description': f'Executable file {filename} uploaded successfully to {endpoint}',
                             'severity': 'HIGH',
-                            'owasp': 'A05:2021',
+                            'owasp': 'A05:2021 / A05:2025',
                             'cwe': 'CWE-434',
                             'remediation': 'Validate file type, scan for malware, rename files, store outside webroot',
                             'evidence': f'Uploaded {filename} without validation'
                         })
                         return
-                except:
+                except Exception as e:
                     continue

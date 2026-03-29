@@ -40,6 +40,7 @@ from modules.server_fingerprinter import ServerFingerprinter
 from modules.http_method_tester import HTTPMethodTester
 from modules.crypto_analyzer import CryptoAnalyzer
 from modules.privilege_escalation_tester import PrivilegeEscalationTester
+from modules.payload_updater import PayloadUpdater
 
 init(autoreset=True)
 
@@ -315,8 +316,13 @@ def main():
     parser.add_argument('--severity-threshold', choices=['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
                         default='LOW', help='Minimum severity to report')
     parser.add_argument('--threads', type=int, default=1, help='Number of threads')
+    parser.add_argument('--update-payloads', action='store_true', help='Download/Sync enterprise payloads before scanning')
 
     args = parser.parse_args()
+
+    if args.update_payloads:
+        updater = PayloadUpdater()
+        updater.update_all()
 
     scanner = PreFlightScanner(
         target_url=args.target,

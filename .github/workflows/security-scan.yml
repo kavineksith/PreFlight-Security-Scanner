@@ -1,0 +1,109 @@
+name: Enterprise Security Scan
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  schedule:
+    # Run a full scan every Sunday at midnight
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Target URL to scan (must be authorized)'
+        required: true
+        default: 'https://staging.example.com'
+      scan_mode:
+        description: 'Scan mode (full, quick, recon)'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - quick
+          - recon
+      severity_threshold:
+        description: 'Minimum severity to report'
+        required: true
+        default: 'LOW'
+        type: choice
+        options:
+          - INFO
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CRITICAL
+
+jobs:
+  security-tests:
+    name: "PreFlight Scanner v2.0"
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-test.txt
+
+    - name: Run Test Suite (CI Validation)
+      run: |
+        # Ensure the scanner itself is functioning correctly before running the scan
+        python -m pytest tests/ -v --tb=short
+
+    - name: Execute Security Scan
+      # We skip the actual scan on branch PRs by default unless manually dispatched,
+      # but you can configure this to run against an ephemeral staging environment.
+      if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+      env:
+        TARGET_URL: ${{ github.event.inputs.target_url || secrets.DEFAULT_TARGET_URL }}
+        SCAN_MODE: ${{ github.event.inputs.scan_mode || 'full' }}
+        SEVERITY_THRESHOLD: ${{ github.event.inputs.severity_threshold || 'LOW' }}
+        # Optional: Add these to your GitHub repository secrets if doing authenticated scans
+        # LOGIN_URL: ${{ secrets.SCANNER_LOGIN_URL }}
+        # USERNAME: ${{ secrets.SCANNER_USERNAME }}
+        # PASSWORD: ${{ secrets.SCANNER_PASSWORD }}
+      run: |
+        echo "Starting PreFlight Enterprise Scanner against $TARGET_URL"
+        
+        # Build command dynamically based on available secrets
+        CMD="python preflight.py $TARGET_URL --mode $SCAN_MODE --severity-threshold $SEVERITY_THRESHOLD --output-dir ./github_reports"
+        
+        if [ ! -z "$LOGIN_URL" ]; then
+          CMD="$CMD --login-url $LOGIN_URL --username $USERNAME --password $PASSWORD"
+        fi
+        
+        # Execute the scan (using continue-on-error to ensure we always upload the report)
+        eval $CMD
+      continue-on-error: true
+
+    - name: Upload Security Report Artifacts
+      if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+      uses: actions/upload-artifact@v4
+      with:
+        name: PreFlight-Security-Report
+        path: ./github_reports/
+        retention-days: 30
+
+    - name: Fail Pipeline on Critical Findings
+      if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+      run: |
+        if [ -d "./github_reports" ] && ls ./github_reports/*.json 1> /dev/null 2>&1; then
+          CRITICAL_COUNT=$(grep -o -i '"severity": "CRITICAL"' ./github_reports/*.json | wc -l)
+          if [ "$CRITICAL_COUNT" -gt 0 ]; then
+            echo "::error::Scan failed: Found $CRITICAL_COUNT CRITICAL vulnerabilities!"
+            exit 1
+          else
+            echo "No critical vulnerabilities found. Scan passed."
+          fi
+        fi

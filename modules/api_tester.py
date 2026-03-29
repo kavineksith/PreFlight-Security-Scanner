@@ -5,6 +5,7 @@ Tests for API-specific vulnerabilities
 
 import time
 import json
+import concurrent.futures
 from urllib.parse import urljoin
 from colorama import Fore, Style
 
@@ -15,17 +16,23 @@ class APITester:
         self.findings = []
         
     def run_all_tests(self, is_authenticated):
-        """Run all API security tests"""
+        """Run all API security tests concurrently"""
         
-        self.test_broken_object_level_auth()
-        self.test_excessive_data_exposure()
-        self.test_rate_limiting()
-        self.test_broken_function_level_auth()
-        self.test_ssrf_api()
-        self.test_mass_assignment()
-        self.test_injection_api()
-        self.test_security_misconfigurations_api()
+        tests = [
+            self.test_broken_object_level_auth,
+            self.test_excessive_data_exposure,
+            self.test_rate_limiting,
+            self.test_broken_function_level_auth,
+            self.test_ssrf_api,
+            self.test_mass_assignment,
+            self.test_injection_api,
+            self.test_security_misconfigurations_api
+        ]
         
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(test) for test in tests]
+            concurrent.futures.wait(futures)
+            
         return self.findings
     
     def test_broken_object_level_auth(self):
@@ -53,13 +60,13 @@ class APITester:
                         'title': 'Broken Object Level Authorization (BOLA)',
                         'description': f'Unauthorized access to other users\' resources at {test_url}',
                         'severity': 'HIGH',
-                        'api_owasp': 'API1:2023',
+                        'api_owasp': 'API1:2023 / API1:2019 / API1:2025',
                         'cwe': 'CWE-639',
                         'remediation': 'Implement user context validation for every object access',
                         'evidence': f'Successfully accessed resource ID {test_id} from authenticated session'
                     })
                     return
-            except:
+            except Exception as e:
                 continue
     
     def test_excessive_data_exposure(self):
@@ -81,14 +88,14 @@ class APITester:
                             'title': 'Excessive Data Exposure',
                             'description': f'API returns sensitive fields: {", ".join(exposed)}',
                             'severity': 'MEDIUM',
-                            'api_owasp': 'API3:2023',
+                            'api_owasp': 'API3:2023 / API3:2019 / API3:2025',
                             'cwe': 'CWE-200',
                             'remediation': 'Implement proper response filtering, never return sensitive data',
                             'evidence': f'Fields {exposed} found in API response'
                         })
-                except:
+                except Exception as e:
                     pass
-        except:
+        except Exception as e:
             pass
     
     def test_rate_limiting(self):
@@ -105,7 +112,7 @@ class APITester:
                 response = self.session.post(test_endpoint, json={'test': i}, timeout=1)
                 if response.status_code != 429:  # 429 = Too Many Requests
                     success_count += 1
-            except:
+            except Exception as e:
                 pass
         
         elapsed = time.time() - start_time
@@ -115,7 +122,7 @@ class APITester:
                 'title': 'Lack of Rate Limiting',
                 'description': f'Successfully sent {success_count} requests without rate limiting',
                 'severity': 'MEDIUM',
-                'api_owasp': 'API4:2023',
+                'api_owasp': 'API4:2023 / API4:2019 / API4:2025',
                 'cwe': 'CWE-770',
                 'remediation': 'Implement rate limiting (e.g., 100 requests per minute per user)',
                 'evidence': f'{success_count}/50 requests succeeded without 429 responses'
@@ -147,13 +154,13 @@ class APITester:
                         'title': 'Broken Function Level Authorization',
                         'description': f'Admin function {method} {endpoint} accessible without admin role',
                         'severity': 'CRITICAL',
-                        'api_owasp': 'API5:2023',
+                        'api_owasp': 'API5:2023 / API5:2019 / API5:2025',
                         'cwe': 'CWE-285',
                         'remediation': 'Implement role-based access control for all API endpoints',
                         'evidence': f'Successfully accessed {endpoint} with status {response.status_code}'
                     })
                     return
-            except:
+            except Exception as e:
                 continue
     
     def test_ssrf_api(self):
@@ -174,13 +181,13 @@ class APITester:
                         'title': 'SSRF Vulnerability in API',
                         'description': f'API endpoint {endpoint} allows fetching internal resources',
                         'severity': 'HIGH',
-                        'api_owasp': 'API7:2023',
+                        'api_owasp': 'API7:2023 / API6:2019',
                         'cwe': 'CWE-918',
                         'remediation': 'Validate and restrict URLs, use allowlists, block internal IPs',
                         'evidence': f'Successfully fetched internal resource via {endpoint}'
                     })
                     return
-            except:
+            except Exception as e:
                 continue
     
     def test_mass_assignment(self):
@@ -208,12 +215,13 @@ class APITester:
                         'title': 'Mass Assignment Vulnerability',
                         'description': f'API endpoint {endpoint} allows updating protected fields',
                         'severity': 'HIGH',
+                        'api_owasp': 'API6:2023 / API6:2019 / API6:2025',
                         'cwe': 'CWE-915',
                         'remediation': 'Use allowlists for updatable fields, separate DTOs for different operations',
                         'evidence': f'Successfully sent update with admin role field'
                     })
                     return
-            except:
+            except Exception as e:
                 continue
     
     def test_injection_api(self):
@@ -236,13 +244,13 @@ class APITester:
                         'title': 'NoSQL/Injection in API',
                         'description': 'API may be vulnerable to NoSQL or SQL injection',
                         'severity': 'HIGH',
-                        'api_owasp': 'API8:2023',
+                        'api_owasp': 'API8:2023 / API8:2019 / API8:2025',
                         'cwe': 'CWE-943',
                         'remediation': 'Validate and sanitize all input, use parameterized queries',
                         'evidence': f'Payload {payload} accepted without error'
                     })
                     return
-            except:
+            except Exception as e:
                 continue
     
     def test_security_misconfigurations_api(self):
@@ -259,11 +267,11 @@ class APITester:
                     'title': 'API CORS Misconfiguration',
                     'description': 'CORS allows arbitrary origins',
                     'severity': 'MEDIUM',
-                    'api_owasp': 'API8:2023',
+                    'api_owasp': 'API8:2023 / API8:2019 / API8:2025',
                     'remediation': 'Restrict CORS to specific trusted origins',
                     'evidence': 'Access-Control-Allow-Origin: * detected'
                 })
-        except:
+        except Exception as e:
             pass
         
         # Test for version disclosure
@@ -276,9 +284,9 @@ class APITester:
                     'title': 'API Version/Stack Disclosure',
                     'description': 'API reveals server/version information in headers',
                     'severity': 'LOW',
-                    'api_owasp': 'API8:2023',
+                    'api_owasp': 'API8:2023 / API8:2019 / API8:2025',
                     'remediation': 'Remove or obscure identifying headers',
                     'evidence': 'Server version information exposed in response headers'
                 })
-        except:
+        except Exception as e:
             pass
