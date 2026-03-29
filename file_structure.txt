@@ -32,17 +32,24 @@ preflight-sec/
     ├── cve_mapper.py                 # Core Threat Intelligence Mapping Engine
     ├── cvss_scorer.py                # CVSS v3.1 / EPSS Risk Calculator
     ├── dns_recon.py                  # Subdomain Takeover & DNS Zone Transfers
+    ├── graphql_tester.py             # GraphQL Introspection & Query Batching
     ├── header_analyzer.py            # Missing/Weak Security Headers (HSTS/CSP)
+    ├── header_bypass_tester.py       # WAF Evasion, IP Spoofing & Verb Tunneling
     ├── http_method_tester.py         # HTTP Verb Tampering & OPTIONS leakage
     ├── injection_tester.py           # SQLi, NoSQLi, OS Cmd, LDAP, SSTI
     ├── jwt_analyzer.py               # Token Brute-force & Algorithmic Confusion
+    ├── lfi_tester.py                 # Local File Inclusion & Directory Traversal
+    ├── llm_injection_tester.py       # LLM Prompt Injection & System Context Leaks
     ├── owasp_scanner.py              # OWASP Web Top 10 Security (2017/2021/2025)
     ├── param_pollution_tester.py     # HTTP Parameter Pollution (HPP)
     ├── payload_updater.py            # Dynamic 150k+ Payload Fetcher (SecLists)
+    ├── port_scanner.py               # Concurrent Network Port & Protocol Scanner
     ├── privilege_escalation_tester.py# IDORs & Horizontal/Vertical PrivEsc
     ├── rate_limiter_tester.py        # Brute-force/Rate Limiting absence
     ├── reporter.py                   # HTML/JSON/CSV Generation Engine
     ├── server_fingerprinter.py       # Tech Stack & WAF Detection
     ├── session_tester.py             # Session Fixation & Entropy checks
     ├── ssrf_tester.py                # Server-Side Request Forgery & Cloud Metadata
-    └── utils.py                      # Shared Utilities (Logging/Decorators)
+    ├── utils.py                      # Shared Utilities (Logging/Decorators)
+    ├── waf_detector.py               # Advanced WAF Detection (Cloudflare, AWS, etc)
+    └── web_crawler.py                # Dynamic HTML Link & Form Surface Mapper

