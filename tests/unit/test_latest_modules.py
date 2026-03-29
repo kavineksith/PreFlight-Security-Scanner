@@ -16,7 +16,11 @@ class TestWAFDetector:
 
     def test_cloudflare_detected(self):
         resp1 = make_mock_response(200, headers={'cf-ray': '12345'})
+        resp1.cookies = MagicMock()
+        resp1.cookies.get_dict.return_value = {}
         resp2 = make_mock_response(403, headers={'cf-ray': '12345'})
+        resp2.cookies = MagicMock()
+        resp2.cookies.get_dict.return_value = {}
         self.session.get.side_effect = [resp1, resp2]
         tester = WAFDetector(self.session, BASE_URL)
         tester.detect_waf()
@@ -24,7 +28,11 @@ class TestWAFDetector:
 
     def test_generic_waf_detected(self):
         resp1 = make_mock_response(200)
+        resp1.cookies = MagicMock()
+        resp1.cookies.get_dict.return_value = {}
         resp2 = make_mock_response(406)
+        resp2.cookies = MagicMock()
+        resp2.cookies.get_dict.return_value = {}
         self.session.get.side_effect = [resp1, resp2]
         tester = WAFDetector(self.session, BASE_URL)
         tester.detect_waf()
@@ -62,8 +70,8 @@ class TestDirectoryBruteforcer:
         self.session.get.side_effect = mock_get
         tester = DirectoryBruteforcer(self.session, BASE_URL)
         # Mock the payload list to avoid real downloads in unit tests
-        tester.payloads = ['admin', '.env']
-        tester.bruteforce()
+        tester.wordlist = ['admin', '.env']
+        tester.run_all_checks()
         assert len(tester.findings) > 0
 
 # --- LFI Tester ---
