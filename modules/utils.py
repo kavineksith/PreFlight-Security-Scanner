@@ -60,6 +60,7 @@ class Utils:
         try:
             hostname = urlparse(url).hostname
             context = ssl.create_default_context()
+            context.minimum_version = ssl.TLSVersion.TLSv1_2
             
             with socket.create_connection((hostname, 443), timeout=5) as sock:
                 with context.wrap_socket(sock, server_hostname=hostname) as ssock:

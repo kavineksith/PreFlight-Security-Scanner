@@ -144,7 +144,7 @@ class HTTPMethodTester:
                     r = self.session.get(url, timeout=5, allow_redirects=False)
                     if r.status_code in (301, 302, 307, 308):
                         loc = r.headers.get('Location', '')
-                        if 'evil.com' in loc:
+                        if urlparse(loc).netloc == 'evil.com':
                             self.findings.append({
                                 'title': 'Open Redirect Vulnerability',
                                 'description': f'Open redirect via {param} parameter',

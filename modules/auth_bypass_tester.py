@@ -3,7 +3,7 @@ Authentication Bypass & MFA Tester
 Tests MFA bypass, password reset abuse, OAuth misconfig, verb/path tampering.
 """
 
-from urllib.parse import urljoin, quote
+from urllib.parse import urljoin, quote, urlparse
 from colorama import Fore, Style
 
 
@@ -169,7 +169,7 @@ class AuthBypassTester:
                 r = self.session.get(url, timeout=5, allow_redirects=False)
                 if r.status_code in (301, 302, 307, 308):
                     loc = r.headers.get('Location', '')
-                    if 'evil.com' in loc:
+                    if urlparse(loc).netloc == 'evil.com':
                         self.findings.append({
                             'title': 'OAuth Open Redirect',
                             'description': f'OAuth callback at {ep} allows redirect to external domain',

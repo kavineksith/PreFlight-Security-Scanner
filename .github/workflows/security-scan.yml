@@ -39,6 +39,8 @@ jobs:
   security-tests:
     name: "PreFlight Scanner v2.0"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
     - name: Checkout Repository

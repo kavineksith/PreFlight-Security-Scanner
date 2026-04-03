@@ -182,6 +182,7 @@ class ServerFingerprinter:
         print(f"{Fore.YELLOW}[*] Analyzing SSL/TLS configuration...{Style.RESET_ALL}")
         try:
             ctx = ssl.create_default_context()
+            ctx.minimum_version = ssl.TLSVersion.TLSv1_2
             with socket.create_connection((self.hostname, 443), timeout=5) as sock:
                 with ctx.wrap_socket(sock, server_hostname=self.hostname) as ssock:
                     version = ssock.version()
@@ -214,6 +215,7 @@ class ServerFingerprinter:
         print(f"{Fore.YELLOW}[*] Checking SSL certificate...{Style.RESET_ALL}")
         try:
             ctx = ssl.create_default_context()
+            ctx.minimum_version = ssl.TLSVersion.TLSv1_2
             with socket.create_connection((self.hostname, 443), timeout=5) as sock:
                 with ctx.wrap_socket(sock, server_hostname=self.hostname) as ssock:
                     cert = ssock.getpeercert()
